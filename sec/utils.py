@@ -1,7 +1,9 @@
 import re
 import json
 import aiohttp
+import xmltodict
 
+from utils import asyncify
 
 title_regex = re.compile(r"(.*) - (.*) \((\d+)\) \((.*)\)")
 
@@ -14,14 +16,11 @@ async def get_cik_to_ticker_lookup() -> dict[int, str]:
         for value in tickers_json.values()
     }
 
-def parse_title(title: str) -> dict:
-    """
-    Given the title in this example
+@asyncify
+def parse_feed(raw_feed: str):
+    return xmltodict.parse(raw_feed)
 
-    "144 - monday.com Ltd. (0001845338) (Subject)"
-    which contains the form type, company name, CIK, and status
-    parse into a tuple of form type, company name, CIK, and status using regex
-    """
+def parse_title(title: str) -> dict:
     match = title_regex.match(title)
     assert match, f"Could not parse title: {title} using regex: {title_regex}"
     form, company_name, cik, _ = match.groups()

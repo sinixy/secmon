@@ -1,32 +1,36 @@
-from websockets.asyncio.server import serve, ServerConnection
 import asyncio
 import json
+from websockets.asyncio.server import serve, ServerConnection
+
 
 class Connection:
 
-    def __init__(self, id: str, connection: ServerConnection, filters: list[dict]):
+    def __init__(self, id: str, connection: ServerConnection, filter: dict):
         self.id = id
         self.connection = connection
-        self.filters = filters
+        self.filter = filter
+
+    async def send(self, message: str):
+        await self.connection.send(message)
 
 
 class Server:
 
     def __init__(self, port: int):
         self.port = port
-
         self.__connections: dict[str, Connection] = dict()
 
     def filters(self):
         for con_id, con in self.__connections.items():
-            yield con_id, con.filters
+            yield con_id, con.filter
 
     async def handle(self, websocket: ServerConnection):
         message = await websocket.recv()
         data = json.loads(message)
         con_id = data['id']
-        filters = data['filters']
-        self.__connections[con_id] = Connection(con_id, websocket, filters)
+        filter = data['filter']
+        self.__connections[con_id] = Connection(con_id, websocket, filter)
+        print('Hi,', con_id)
         while True:
             try:
                 message = await websocket.recv()
@@ -37,7 +41,7 @@ class Server:
             print(message)
 
     async def send(self, con_id: str, message: dict):
-        await self.__connections[con_id].connection.send(json.dumps(message))
+        await self.__connections[con_id].send(json.dumps(message))
 
     async def start(self):
         async with serve(self.handle, "", self.port):

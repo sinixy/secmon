@@ -1,16 +1,25 @@
 import re
-import json
 import aiohttp
 import xmltodict
 
 from utils import asyncify
+from config import Edgar
 
 title_regex = re.compile(r"(.*) - (.*) \((\d+)\) \((.*)\)")
 
+
+# this cik_to_ticker stuff is fucking ugly, but I don't wanna connect a whole database/redis just for this data,
+# so just don't dereference it accidentally and you should be fine
+cik_to_ticker = {}
+async def update_cik_to_ticker():
+    cik_to_ticker.clear()
+    cik_to_ticker.update(await get_cik_to_ticker_lookup())
+
+
 async def get_cik_to_ticker_lookup() -> dict[int, str]:
     async with aiohttp.ClientSession() as session:
-        async with session.get("https://www.sec.gov/files/company_tickers.json") as resp:
-            tickers_json = json.loads(await resp.text())
+        async with session.get("https://www.sec.gov/files/company_tickers.json", headers=Edgar.HEADERS) as resp:
+            tickers_json = await resp.json()
     return {
         value['cik_str']: value['ticker'] 
         for value in tickers_json.values()

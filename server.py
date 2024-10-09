@@ -25,12 +25,15 @@ class Server:
             yield con_id, con.filter
 
     async def handle(self, websocket: ServerConnection):
-        message = await websocket.recv()
-        data = json.loads(message)
+        message = json.loads(await websocket.recv())
+        if message['event'] != 'connect': return
+
+        data = message['data']
         con_id = data['id']
         filter = data['filter']
         self.__connections[con_id] = Connection(con_id, websocket, filter)
         print('Hi,', con_id)
+        
         while True:
             try:
                 message = await websocket.recv()

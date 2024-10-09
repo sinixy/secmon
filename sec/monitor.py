@@ -11,7 +11,9 @@ from sec.filing import Filing
 def broadcast(filing: Filing, server: Server):
     for con_id, filter in server.filters():
         if filing.fits(filter):
-            asyncio.create_task(server.send(con_id, filing.to_dict()))
+            asyncio.create_task(
+                server.send(con_id, {'event': 'filing', 'data': filing.to_dict()})
+            )
 
 async def fetch_filings(page: int = 0) -> list[Filing]:
     filings = []

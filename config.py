@@ -12,6 +12,7 @@ class Edgar:
         'User-Agent': IDENTITY,
         'Host': 'www.sec.gov'
     }
-    RSS_FEED_COUNT = 80
-    RSS_FEED_URL = 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent&start={start}' + f'&count={RSS_FEED_COUNT}&output=atom'
+    RSS_FEED_COUNT = 100
+    # exclude ownership for now
+    RSS_FEED_URL = 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent&owner=exclude&start={start}' + f'&count={RSS_FEED_COUNT}&output=atom'
     

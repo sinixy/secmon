@@ -16,6 +16,13 @@ def broadcast(filing: Filing, server: Server):
             )
 
 async def fetch_filings(page: int = 0) -> list[Filing]:
+    try:
+        return await __fetch_filings(page)
+    except Exception as e:
+        print('Fetch filings error:', e)
+        return []
+
+async def __fetch_filings(page: int = 0) -> list[Filing]:
     filings = []
     async with aiohttp.ClientSession() as session:
         async with session.get(Edgar.RSS_FEED_URL.format(start=Edgar.RSS_FEED_COUNT * page), headers=Edgar.HEADERS) as resp:
@@ -37,14 +44,22 @@ async def monitor_filings(server: Server):
         t0 = time()
         page = 0
         filings = await fetch_filings(page)
-        new_latest_an = filings[0].accession_no
-        done = process_filings(filings, latest_an)
-        while not done:
-            if page == 9: raise Exception("That's too many pages; something gotta be wrong")
-            page += 1
-            filings = await fetch_filings(page)
-            done = process_filings(filings, latest_an)
+        if not filings:
+            # costilikiiiii
+            print('Wtf no filings?')
+            await asyncio.sleep(1)
+            continue 
+        # new_latest_an = filings[0].accession_no
+        # done = process_filings(filings, latest_an)
+        # while not done:
+        #     if page == 5:
+        #         print("That's too many pages; something gotta be wrong.", latest_an)
+        #         break
+        #     page += 1
+        #     filings = await fetch_filings(page)
+        #     if not filings: break
+        #     done = process_filings(filings, latest_an)
+        process_filings(filings, latest_an)
+        latest_an = filings[0].accession_no
         t1 = time()
         if t1 - t0 < 0.13: await asyncio.sleep(0.13 - (t1 - t0))
-        latest_an = new_latest_an
-            

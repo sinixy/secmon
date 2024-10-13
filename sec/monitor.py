@@ -1,6 +1,7 @@
 import aiohttp
 import asyncio
 from time import time
+from collections import deque
 
 from config import Edgar
 from server import Server
@@ -32,34 +33,21 @@ async def __fetch_filings(page: int = 0) -> list[Filing]:
     return filings
 
 async def monitor_filings(server: Server):
-    def process_filings(filings: list[Filing], latest_an: str) -> bool:
+    def process_filings(filings: list[Filing], latest_ans: deque[str]):
         for f in filings:
-            if f.accession_no == latest_an: return True
+            if f.accession_no in latest_ans: continue
+            latest_ans.append(f.accession_no)
             broadcast(f, server)
-        return False
 
-    filings = await fetch_filings(0)
-    latest_an = filings[-1].accession_no
+    latest_ans: deque[str] = deque([], maxlen=Edgar.RSS_FEED_COUNT*2)
     while True:
         t0 = time()
-        page = 0
-        filings = await fetch_filings(page)
+        filings = await fetch_filings()
         if not filings:
             # costilikiiiii
             print('Wtf no filings?')
             await asyncio.sleep(1)
-            continue 
-        # new_latest_an = filings[0].accession_no
-        # done = process_filings(filings, latest_an)
-        # while not done:
-        #     if page == 5:
-        #         print("That's too many pages; something gotta be wrong.", latest_an)
-        #         break
-        #     page += 1
-        #     filings = await fetch_filings(page)
-        #     if not filings: break
-        #     done = process_filings(filings, latest_an)
-        process_filings(filings, latest_an)
-        latest_an = filings[0].accession_no
+            continue
+        process_filings(filings, latest_ans)
         t1 = time()
-        if t1 - t0 < 0.13: await asyncio.sleep(0.13 - (t1 - t0))
+        if t1 - t0 < 0.15: await asyncio.sleep(0.15 - (t1 - t0))
